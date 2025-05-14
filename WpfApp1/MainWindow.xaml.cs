@@ -7,12 +7,15 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using WpfApp1.UI;
 using WpfApp1.Utilitys;
+using Image = System.Windows.Controls.Image;
 
 namespace WpfApp1
 {
@@ -26,9 +29,15 @@ namespace WpfApp1
         string licenseKey;
         private CanvasWindow canvasWindow;
         private NotifyIcon trayIcon;
+        private bool magnifierActive = false;
+        private Window magnifierWindow;
+        private const int magnifierSize = 100;
+        private const double zoomFactor = 1.5;
         public MainWindow()
         {
             InitializeComponent();
+            this.Background = System.Windows.Media.Brushes.Transparent;
+            this.AllowsTransparency = true;
             Loaded += MainWindow_Loaded;
         }
 
@@ -211,6 +220,172 @@ namespace WpfApp1
                 bitmapImage.Freeze();
                 return bitmapImage;
             }
+        }
+
+        private void MagnifierButton_Click(object sender, RoutedEventArgs e)
+        {
+            magnifierActive = !magnifierActive;
+
+            if (magnifierActive)
+            {
+                // Activate magnifier
+                CompositionTarget.Rendering += UpdateMagnifier;
+            }
+            else
+            {
+                // Deactivate magnifier
+                CompositionTarget.Rendering -= UpdateMagnifier;
+                HideMagnifier();
+            }
+            
+        }
+
+
+        private void UpdateMagnifier(object sender, EventArgs e)
+        {
+            var mousePos = System.Windows.Forms.Cursor.Position;
+
+            if (magnifierWindow == null)
+            {
+                // Create magnifier window
+                magnifierWindow = new Window
+                {
+                    Width = magnifierSize,
+                    Height = magnifierSize,
+                    WindowStyle = WindowStyle.None,
+                    AllowsTransparency = true,
+                    Background = System.Windows.Media.Brushes.Transparent,
+                    IsHitTestVisible = false,
+                    Topmost = true,
+                    ShowInTaskbar = false
+                };
+
+                var border = new Border
+                {
+                    Width = magnifierSize,
+                    Height = magnifierSize,
+                    BorderBrush = System.Windows.Media.Brushes.Black,
+                    BorderThickness = new Thickness(2),
+                    Clip = new EllipseGeometry(new System.Windows.Point(magnifierSize / 2, magnifierSize / 2), magnifierSize / 2, magnifierSize / 2)
+                };
+
+                var image = new System.Windows.Controls.Image
+                {
+                    Width = magnifierSize,
+                    Height = magnifierSize,
+                    RenderTransformOrigin = new System.Windows.Point(0.5, 0.5)
+                };
+
+                border.Child = image;
+                magnifierWindow.Content = border;
+                magnifierWindow.Show();
+            }
+
+            // Update magnifier window position
+            magnifierWindow.Left = mousePos.X - magnifierSize / 2;
+            magnifierWindow.Top = mousePos.Y - magnifierSize / 2;
+
+            int captureSize = (int)(magnifierSize / zoomFactor);
+            int halfCapture = captureSize / 2;
+
+            using (var bmp = new Bitmap(captureSize, captureSize))
+            using (var g = Graphics.FromImage(bmp))
+            {
+                g.CopyFromScreen(mousePos.X - halfCapture, mousePos.Y - halfCapture, 0, 0, bmp.Size);
+
+                var hBitmap = bmp.GetHbitmap();
+                var bitmapSource = Imaging.CreateBitmapSourceFromHBitmap(
+                    hBitmap,
+                    IntPtr.Zero,
+                    Int32Rect.Empty,
+                    BitmapSizeOptions.FromWidthAndHeight(captureSize, captureSize));
+
+                var image = ((magnifierWindow.Content as Border)?.Child as System.Windows.Controls.Image);
+                image.Source = bitmapSource;
+
+                // Scale up to fill the magnifier window
+                image.Width = magnifierSize;
+                image.Height = magnifierSize;
+                image.RenderTransform = new ScaleTransform(zoomFactor, zoomFactor); // apply zoom
+
+                DeleteObject(hBitmap);
+            }
+        }
+
+        [System.Runtime.InteropServices.DllImport("gdi32.dll")]
+        public static extern bool DeleteObject(IntPtr hObject);
+
+
+        private void MainWindow_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            var position = System.Windows.Forms.Cursor.Position; // screen coordinates
+
+            if (magnifierWindow == null)
+            {
+                magnifierWindow = new Window
+                {
+                    Width = 100,
+                    Height = 100,
+                    WindowStyle = WindowStyle.None,
+                    AllowsTransparency = true,
+                    Background = System.Windows.Media.Brushes.Transparent,
+                    IsHitTestVisible = false,
+                    Topmost = true,
+                    ShowInTaskbar = false
+                };
+
+                var border = new Border
+                {
+                    Width = 100,
+                    Height = 100,
+                    CornerRadius = new CornerRadius(50),
+                    BorderThickness = new Thickness(2),
+                    BorderBrush = System.Windows.Media.Brushes.Black,
+                    ClipToBounds = true
+                };
+
+                var image = new Image
+                {
+                    Width = 200, // zoom factor 2x
+                    Height = 200,
+                    RenderTransform = new TranslateTransform()
+                };
+
+                border.Child = image;
+                magnifierWindow.Content = border;
+                magnifierWindow.Show();
+            }
+
+            magnifierWindow.Left = position.X - 50;
+            magnifierWindow.Top = position.Y - 50;
+
+            // Capture screen
+            using (var screenBmp = new Bitmap(200, 200))
+            {
+                using (var g = Graphics.FromImage(screenBmp))
+                {
+                    g.CopyFromScreen(position.X - 50, position.Y - 50, 0, 0, screenBmp.Size);
+                }
+
+                var bitmapSource = Imaging.CreateBitmapSourceFromHBitmap(
+                    screenBmp.GetHbitmap(),
+                    IntPtr.Zero,
+                    Int32Rect.Empty,
+                    BitmapSizeOptions.FromWidthAndHeight(200, 200));
+
+                var image = (magnifierWindow.Content as Border)?.Child as Image;
+                if (image != null)
+                {
+                    image.Source = bitmapSource;
+                    image.RenderTransform = new TranslateTransform(0, 0); // no translation needed
+                }
+            }
+        }
+
+        private void HideMagnifier()
+        {
+            magnifierWindow?.Close();
+            magnifierWindow = null;
         }
     }
 }
