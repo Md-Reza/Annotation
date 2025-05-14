@@ -1,0 +1,9 @@
+﻿<Window x:Class="WpfApp1.UI.SnippingOverlay"
+xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        AllowsTransparency="True" WindowStyle="None" Topmost="True"
+        Background="#40000000" WindowState="Maximized" 
+        KeyDown="Window_KeyDown" MouseDown="Window_MouseDown" 
+        MouseMove="Window_MouseMove" MouseUp="Window_MouseUp">
+    <Canvas Name="SelectionCanvas"/>
+</Window>

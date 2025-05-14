@@ -1,0 +1,51 @@
+﻿<Window x:Class="WpfApp1.FRMLicenseValidator"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+         Background="Transparent"
+        Title="License Activation" Height="410" Width="600" WindowStartupLocation="CenterScreen" WindowStyle="None" AllowsTransparency="True">
+    <Border CornerRadius="5" Background="#f8f8f8"  BorderThickness="1">
+        <Grid>
+            <Image Source="/Images/icon_close.png" Grid.Column="1" Panel.ZIndex="1" MouseUp="Image_MouseUp" Style="{StaticResource imgClose}"/>
+            <!-- Background Rounded Border -->
+            <Border Background="White" CornerRadius="10" Padding="20" Margin="0 0 0 20" 
+            HorizontalAlignment="Center" VerticalAlignment="Center" MouseDown="Border_MouseDown"
+            Style="{StaticResource shadowedBorder}">
+
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="500" >
+
+                    <TextBlock Text="License activation" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                    <TextBlock Text="Enter license key" FontSize="14" Foreground="Gray" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+
+
+                    <Border BorderThickness="1" BorderBrush="#acb0af" Margin="0 0 0 10 " CornerRadius="5"  >
+                        <Grid Margin="7 9">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Image  Source="Images/icon_mac.png" Height="20"/>
+                            <TextBlock x:Name="textMacAddress" MouseDown="textMacAddress_MouseDown" Text="Mac Address" Style="{StaticResource textHint}"/>
+                            <TextBox x:Name="txtMacAddress" IsReadOnly="True" TextChanged="txtMacAddress_TextChanged" Style="{StaticResource inputTextBox}"/>
+                        </Grid>
+                    </Border>
+
+                    <Border BorderThickness="1" BorderBrush="#acb0af" Margin="0 0 0 10 " CornerRadius="5"  >
+                        <Grid Margin="7 9">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Image  Source="/Images/icon_key.png" Height="20"/>
+                            <TextBlock x:Name="textLicenseInput" MouseDown="textLicenseInput_MouseDown" Text="Enter secret key" Style="{StaticResource textHint}"/>
+                            <TextBox x:Name="txtLicenseInput" TextChanged="txtLicenseInput_TextChanged" Style="{StaticResource inputTextBox}"/>
+                        </Grid>
+                    </Border>
+                    <Button x:Name="btnSubmit" Click="btnSubmit_Click" Content="Validate key" Style="{StaticResource submitButton}"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
+    
+</Window>
