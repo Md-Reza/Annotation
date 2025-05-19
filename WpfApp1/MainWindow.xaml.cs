@@ -33,16 +33,53 @@ namespace WpfApp1
         private Window magnifierWindow;
         private const int magnifierSize = 100;
         private const double zoomFactor = 1.5;
+        private bool _isDragging = false;
+        private System.Windows.Point _dragOffset;
         public MainWindow()
         {
             InitializeComponent();
             this.Background = System.Windows.Media.Brushes.Transparent;
             this.AllowsTransparency = true;
             Loaded += MainWindow_Loaded;
+            // Hook mouse events to the window itself
+            // Attach mouse handlers only to the drag icon/button
+            this.Loaded += MainWindow_Loaded;
+        }
+
+
+        protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
+        {
+            base.OnMouseLeftButtonUp(e);
+            if (_isDragging)
+            {
+                _isDragging = false;
+                SnapOrRevert();
+            }
+        }
+
+        private void SnapOrRevert()
+        {
+            var workingArea = SystemParameters.WorkArea;
+            double windowCenter = this.Left + this.Width / 2;
+            double screenCenter = workingArea.Left + workingArea.Width / 2;
+
+            if (Math.Abs(windowCenter - screenCenter) > workingArea.Width / 4)
+            {
+                // More than 50% crossed center, snap to bottom left or right
+                this.Top = workingArea.Bottom - this.Height;
+                this.Left = (windowCenter < screenCenter) ? workingArea.Left : (workingArea.Right - this.Width);
+            }
+            else
+            {
+                // Less than 50% moved — revert to original position
+                this.Left = _dragOffset.X;
+                this.Top = _dragOffset.Y;
+            }
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            _dragOffset = new System.Windows.Point(this.Left, this.Top);
             trayIcon = new NotifyIcon
             {
                 Icon = new Icon(SystemIcons.Application, 40, 40),
@@ -98,8 +135,11 @@ namespace WpfApp1
 
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
         {
+
             base.OnMouseLeftButtonDown(e);
-            DragMove(); // allows dragging the window
+            _isDragging = true;
+            _dragOffset = new System.Windows.Point(this.Left, this.Top); // store original position
+            this.DragMove(); // allow dragging
         }
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
@@ -237,7 +277,7 @@ namespace WpfApp1
                 CompositionTarget.Rendering -= UpdateMagnifier;
                 HideMagnifier();
             }
-            
+
         }
 
 
